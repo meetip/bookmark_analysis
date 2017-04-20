@@ -28,10 +28,7 @@ def execute(cleanse_method, pages):
         page_text = reader.get_site_text(page)
         processed_pages.append({"url": page, "text": page_text})
     print("Collected: %d" % (time.time() - start_time))
-    print(type(processed_pages))
-    print(processed_pages)
 
-def nouse():
     #3: RAKE keywords for each page
     print("=== 3. RAKE")
     rake = RAKE.Rake(RAKE_STOPLIST, min_char_length=2, max_words_length=5)
@@ -110,6 +107,4 @@ def get_test_links():
 
 # run algorithms
 test_links = get_test_links()[:50]
-print(type(test_links))
-print(test_links)
-#execute(cleanse_tiernok_html, test_links)
+execute(cleanse_tiernok_html, test_links)
