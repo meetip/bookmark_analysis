@@ -1,40 +1,36 @@
-"""Script to run through new cleanse and RAKE logic"""
-import os
-import time
-import requests
-from bs4 import BeautifulSoup
-import contentloader
+
 import RAKE
 import tfidf
 import textrank
+import os
+import time
+import string
 
 RAKE_STOPLIST = 'stoplists/SmartStoplist.txt'
-CACHE_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cache')
-
-def execute(cleanse_method, pages):
+def execute(pages):
     """Execute RAKE and TF-IDF algorithms on each page and output top scoring phrases"""
 
     start_time = time.time()
 
-    #1: Initialize a URL reader with local caching to be kind to the internet
-    print("=== 1. Initialize")
-    reader = contentloader.CacheableReader(CACHE_FOLDER, cleanse_method)
-    print("Initialized: %d" % (time.time() - start_time))
+    
 
     #2: Collect raw text for pages
-    print("=== 2. Collect Raw Text")
+    print("=== 2. Collect Raw Text from file")
+    text = ""
+    f = open(pages[0], "r")
+    for line in f:
+        #line = line.strip("\r")
+        #line = line.strip("\n") 
+        text += line.lower()
     processed_pages = []
     for page in pages:
-        page_text = reader.get_site_text(page)
-        processed_pages.append({"url": page, "text": page_text})
+        page_text = text
+        processed_pages.append({"url": pages[0], "text": page_text})
     print("Collected: %d" % (time.time() - start_time))
-    print(type(processed_pages))
-    print(processed_pages)
 
-def nouse():
     #3: RAKE keywords for each page
     print("=== 3. RAKE")
-    rake = RAKE.Rake(RAKE_STOPLIST, min_char_length=2, max_words_length=5)
+    rake = RAKE.Rake(RAKE_STOPLIST, min_char_length=2, max_words_length=1)
     for page in processed_pages:
         page["rake_results"] = rake.run(page["text"])
     print("RAKE: %d" % (time.time() - start_time))
@@ -73,43 +69,21 @@ def nouse():
         print("URL: %s" % page["url"])
         print("RAKE:")
         for result in page["rake_results"][:5]:
-            print(" * %s" % result[0])
+            print(" * %s" % result[0], result[1])
         print("TF-IDF:")
         for result in page["tfidf_results"][:5]:
-            print(" * %s" % result[0])
+            print(" * %s" % result[0], result[1])
         print("TextRank:")
         for result in page["textrank_results"][:5]:
-            print(" * %s" % result[0])
-
+            print(" * %s" % result[0], result[1])
+         
     end_time = time.time() - start_time
     print('Done. Elapsed: %d' % end_time)
 
-def cleanse_tiernok_html(html):
-    """Cleanse function for tiernok.com blog posts"""
-    soup = BeautifulSoup(html, "html.parser")
-    content = soup.find('article')
-    for element in content.findAll(class_="bwp-syntax-block"):
-        element.extract()
-    for element in content.findAll(class_="ep-post-comments"):
-        element.extract()
-    for element in content.findAll(class_="ep-post-subtext"):
-        element.extract()
-    return content.get_text(" ") \
-                  .lower() \
-                  .replace('\n', '') \
-                  .replace('\r', '')
+def main():
 
-# get links because I'm too lazy to copy/pasta
-def get_test_links():
-    resp = requests.get('http://tiernok.com/posts/index.html')
-    resp.raise_for_status()
-    html = resp.text
-    soup = BeautifulSoup(html, "html.parser")
-    anchors = soup.findAll(class_="ep-archive-title-link")
-    return ["http://tiernok.com/posts/{0}".format(link['href'][2:]) for link in anchors]
+    execute(["test.txt"])
 
-# run algorithms
-test_links = get_test_links()[:50]
-print(type(test_links))
-print(test_links)
-#execute(cleanse_tiernok_html, test_links)
+
+
+main()
